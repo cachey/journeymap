@@ -1,9 +1,9 @@
 <!DOCTYPE html><html>
 <head>
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.8.0/Chart.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.8.0/Chart.bundle.min.js"></script>
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-annotation/0.5.7/chartjs-plugin-annotation.min.js"></script>
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/skeleton/2.0.4/skeleton.min.css">
-	<link href='https://fonts.googleapis.com/css?family=Raleway:400,300,600' rel='stylesheet' type='text/css'>
+	<link href="https://fonts.googleapis.com/css?family=Raleway:400,300,600" rel="stylesheet" type="text/css">
 	<style>
 	#chartjs-tooltip {
 		opacity: 1;
@@ -31,19 +31,19 @@
 <body style="padding: 20px">
 	<table style="table-layout: fixed;">
 	<tr><td  width="500px">
-	<input id="nCase" value="14"> of <span id="numPatients"></span> patients <button onClick="loadPatient();">Load</button><br>
+	<input id="nCase" value="14"> of <span id="numPatients"></span> patients <button onclick="loadPatient();">Load</button><br>
 
 	<h4 id="demo-title"></h4>
 	<b>Primary Diagnosis: </b><span id="primaryDx"></span><br>
 	<b>Secondary Diagnosis: </b><span id="secondDx"></span>
 	</td><td width="500px">
-	<button onClick="document.getElementById('nCase').value = parseInt(document.getElementById('nCase').value)-1; loadPatient();">Previous</button>
-	<button onClick="document.getElementById('nCase').value = parseInt(document.getElementById('nCase').value)+1; loadPatient();">Next</button>
+	<button onclick="document.getElementById('nCase').value = parseInt(document.getElementById('nCase').value)-1; loadPatient();">Previous</button>
+	<button onclick="document.getElementById('nCase').value = parseInt(document.getElementById('nCase').value)+1; loadPatient();">Next</button>
 	<div id="ptInfo1" style="font-size: 14px;"></div>
 	</td><td width="500px">
 	<div id="ptInfo2" style="font-size: 14px;"></div>
 	</td></tr></table>
-	<canvas id="chartarea", height="100%"></canvas>
+	<canvas id="chartarea" height="100%"></canvas>
 	<script src="data.js"></script>
 <script>
 document.getElementById("numPatients").innerHTML = records.length;
@@ -53,10 +53,9 @@ for (var i = 0; i < records.length; i++) {
 	}
 }
 var chart, ctx;
-var AKPS = new Array();
-var RUGADL = new Array();
-var Admissions = new Array();
-
+var AKPS = [];
+var RUGADL = [];
+var Admissions = [];
 var typeKey = {
 	"ED": -6,
 	"WARD": -14,
@@ -64,8 +63,7 @@ var typeKey = {
 	"OUTPT": -30,
 	"COMM": -50,
 	"OTHER": 0
-}
-
+};
 var colKey = { //TODO: finish this
 	"ED": "rgb(17, 152, 169)",
 	"WARD": "rgb(20, 69, 166)",
@@ -73,12 +71,10 @@ var colKey = { //TODO: finish this
 	"OUTPT": "rgb(223, 107, 108)",
 	"COMM": "rgb(15, 166, 68)",
 	"OTHER": 0
-}
-
+};
 var customTooltips = function(tooltip) {
 // Tooltip Element
 	// tooltip.dataPoints[0] -> datasetIndex, index
-
 	var tooltipEl = document.getElementById('chartjs-tooltip');
 	if (!tooltipEl) {
 		tooltipEl = document.createElement('div');
@@ -86,13 +82,11 @@ var customTooltips = function(tooltip) {
 		tooltipEl.innerHTML = '<table></table>';
 		this._chart.canvas.parentNode.appendChild(tooltipEl);
 	}
-
 	// Hide if no tooltip
 	if (tooltip.opacity === 0) {
 		tooltipEl.style.opacity = 0.7;
 		return;
 	}
-
 	// Set caret Position
 	tooltipEl.classList.remove('above', 'below', 'no-transform');
 	if (tooltip.yAlign) {
@@ -100,21 +94,13 @@ var customTooltips = function(tooltip) {
 	} else {
 		tooltipEl.classList.add('no-transform');
 	}
-
-	function getBody(bodyItem) {
-		return bodyItem.lines;
-	}
-
 	var info;
 	var innerHtml = "";
 	var tableRoot = tooltipEl.querySelector('table');
 	for (let ep of tooltip.dataPoints) {
-		if (ep.datasetIndex > 1) { 
+		if (ep.datasetIndex > 1) {
 			info = chart.data.datasets[ep.datasetIndex].data[ep.index].attrib;
 			if (tooltip.body) {
-				var titleLines = tooltip.title || [];
-				var bodyLines = tooltip.body.map(getBody);
-
 				innerHtml += "<b>Day " + (365 - parseInt(ep.label)).toString() + "</b>&nbsp;";
 				// need to add if here to stop TypeError
 				Object.keys(info).forEach(function(key) {
@@ -129,10 +115,8 @@ var customTooltips = function(tooltip) {
 	}
 	// Set Text
 	tableRoot.innerHTML = innerHtml;
-
 	var positionY = this._chart.canvas.offsetTop;
 	var positionX = this._chart.canvas.offsetLeft;
-
 	// Display, position, and set styles for font
 	tooltipEl.style.opacity = 1;
 	tooltipEl.style.left = positionX + tooltip.caretX + 'px';
@@ -142,67 +126,62 @@ var customTooltips = function(tooltip) {
 	tooltipEl.style.fontStyle = tooltip._bodyFontStyle;
 	tooltipEl.style.padding = tooltip.yPadding + 'px ' + tooltip.xPadding + 'px';
 };
-
-
 var loadPatient = function() {
-try { chart.destroy();
+try {
+    chart.destroy();
 } catch {
 	console.log("First patient");
 }
+
 if (document.getElementById('chartjs-tooltip')) {
 	document.getElementById('chartjs-tooltip').style.opacity = 0;
 }
 
-patient = records[parseInt(document.getElementById("nCase").value)-1];
-
+var patient = records[parseInt(document.getElementById("nCase").value)-1];
 document.getElementById("demo-title").innerHTML = patient.age + " " + patient.gender;
-document.getElementById("primaryDx").innerHTML = patient.ptinfo["Primary diagnosis"]
-document.getElementById("secondDx").innerHTML = patient.ptinfo["Secondary diagnosis"]
-
+document.getElementById("primaryDx").innerHTML = patient.ptinfo["Primary diagnosis"];
+document.getElementById("secondDx").innerHTML = patient.ptinfo["Secondary diagnosis"];
 var text = "";
 Object.keys(patient.ptinfo).forEach(function(key) {
 	if (key.search("diagnosis") === -1) {
 		text += "<b>" + key + ":</b> " + patient.ptinfo[key] + "<br>";
 	}
-})
+});
 
 document.getElementById("ptInfo1").innerHTML = text.substring(0, text.search("<b>ACP/MEPOA"));
 document.getElementById("ptInfo2").innerHTML = text.substring(text.search("<b>ACP/MEPOA"));
-
 ctx = document.getElementById('chartarea').getContext('2d');
-
 // generate the AKPS and RUG-ADL datasets
 // AKPS - 0-100 (left side).
 // RUG-ADL - 0-18 (right side).
-AKPS = new Array();
-RUGADL = new Array();
-Admissions = new Array();
-
+AKPS = [];
+RUGADL = [];
+Admissions = [];
 
 for (var i in Object.keys(typeKey)) {
-	Admissions[Object.keys(typeKey)[i]] = new Array();
+	Admissions[Object.keys(typeKey)[i]] = [];
 }
-
 for (var enc in patient.encounters) {
 	if (patient.encounters[enc].cat === "WARD") {
-		if ("AKPS on admission" in patient.encounters[enc].attrib) {
-			var x = patient.encounters[enc].d;
-			var y = parseInt(patient.encounters[enc].attrib["AKPS on admission"]);
+    var x, y;
+    if ("AKPS on admission" in patient.encounters[enc].attrib) {
+			x = patient.encounters[enc].d;
+			y = parseInt(patient.encounters[enc].attrib["AKPS on admission"]);
 			AKPS.push({'x':x, 'y':y});
 		}
 		if ("AKPS on discharge" in patient.encounters[enc].attrib && "Calculated LOS" in patient.encounters[enc].attrib) {
-			var x = patient.encounters[enc].d + parseInt(patient.encounters[enc].attrib["Calculated LOS"]);
-			var y = parseInt(patient.encounters[enc].attrib["AKPS on discharge"]);
+			x = patient.encounters[enc].d + parseInt(patient.encounters[enc].attrib["Calculated LOS"]);
+			y = parseInt(patient.encounters[enc].attrib["AKPS on discharge"]);
 			AKPS.push({'x':x, 'y':y});
 		}
 		if ("RUG-ADL on admission" in patient.encounters[enc].attrib) {
-			var x = patient.encounters[enc].d;
-			var y = parseInt(patient.encounters[enc].attrib["RUG-ADL on admission"]);
+			x = patient.encounters[enc].d;
+			y = parseInt(patient.encounters[enc].attrib["RUG-ADL on admission"]);
 			RUGADL.push({'x':x, 'y':18-y});
 		}
 		if ("RUG-ADL on discharge" in patient.encounters[enc].attrib && "Calculated LOS" in patient.encounters[enc].attrib) {
-			var x = patient.encounters[enc].d + parseInt(patient.encounters[enc].attrib["Calculated LOS"]);
-			var y = parseInt(patient.encounters[enc].attrib["RUG-ADL on discharge"]);
+			x = patient.encounters[enc].d + parseInt(patient.encounters[enc].attrib["Calculated LOS"]);
+			y = parseInt(patient.encounters[enc].attrib["RUG-ADL on discharge"]);
 			RUGADL.push({'x':x, 'y':18-y});
 		}
 	}
@@ -210,38 +189,26 @@ for (var enc in patient.encounters) {
 	var ey = typeKey[patient.encounters[enc].cat];
 	Admissions[patient.encounters[enc].cat].push({'x':ex, 'y':ey, attrib:patient.encounters[enc].attrib});
 }
-
 // sort the scoring
 AKPS.sort(function(a, b) {
 	return a.x - b.x;
-})
+});
 RUGADL.sort(function(a, b) {
 	return a.x - b.x;
-})
-// sort the Admissions array by x
-var overlay = [{
-	type: 'line',
-	mode: 'horizontal',
-	scaleID: 'AKPS',
-	value: 10,
-	label: {
-		content: "Inpatient visits",
-	}
-}];
-
+});
 
 chart = new Chart(ctx, {
     type: 'line',
     data: {
         labels: [],
-        datasets: [{ 
+        datasets: [{
             label: "AKPS",
 			fill: false,
 			data: AKPS,
 			yAxisID: 'AKPS',
 			backgroundColor: 'rgb(242, 143, 56)',
 			borderColor: 'rgb(242, 143, 56, 0.4)',
-			lineTension: 0.25,
+			lineTension: 0.25
         }, {
 			label: "RUG-ADL",
 			fill: false,
@@ -249,7 +216,7 @@ chart = new Chart(ctx, {
 			yAxisID: 'RUGADL',
 			backgroundColor: 'rgb(89, 181, 217)',
 			borderColor: 'rgb(89, 181, 217, 0.4)',
-			lineTension: 0.15,
+			lineTension: 0.15
 		}, {
 			data: Admissions["ED"],
 			yAxisID: 'AKPS',
@@ -257,7 +224,7 @@ chart = new Chart(ctx, {
 			showLine: false,
 			pointRadius: 6,
 			pointHoverRadius: 10,
-			backgroundColor: colKey["ED"],
+			backgroundColor: colKey["ED"]
 		}, {
 			data: Admissions["WARD"], // TODO autogenerate this
 			yAxisID: 'AKPS',
@@ -265,7 +232,7 @@ chart = new Chart(ctx, {
 			showLine: false,
 			pointRadius: 6,
 			pointHoverRadius: 10,
-			backgroundColor: colKey["WARD"],
+			backgroundColor: colKey["WARD"]
 		}, {
 			data: Admissions["ICU"],
 			yAxisID: 'AKPS',
@@ -273,7 +240,7 @@ chart = new Chart(ctx, {
 			showLine: false,
 			pointRadius: 12,
 			pointHoverRadius: 12,
-			backgroundColor: colKey["ICU"],
+			backgroundColor: colKey["ICU"]
 		}, {
 			data: Admissions["OUTPT"],
 			yAxisID: 'AKPS',
@@ -281,7 +248,7 @@ chart = new Chart(ctx, {
 			showLine: false,
 			pointRadius: 6,
 			pointHoverRadius: 10,
-			backgroundColor: 'rgb(223, 107, 108)',
+			backgroundColor: 'rgb(223, 107, 108)'
 		}, {
 			data: Admissions["COMM"],
 			yAxisID: 'AKPS',
@@ -289,12 +256,12 @@ chart = new Chart(ctx, {
 			showLine: false,
 			pointRadius: 6,
 			pointHoverRadius: 10,
-			backgroundColor: 'rgb(15, 166, 68)',
+			backgroundColor: 'rgb(15, 166, 68)'
 		}]
     },
     options: {
 		legend: {
-			display: false,
+			display: false
 		},
 		scales: {
             yAxes: [{
@@ -310,9 +277,9 @@ chart = new Chart(ctx, {
                     callback: function(value, index, values) {
                         return (value >= 0 ? value : "");
                     }
-				}, 
+				},
 				gridLines: {
-					color: Array(6).fill("rgb(0, 0, 0, 0.1)").concat(Array(3).fill("#FFFFFF")),
+					color: Array(6).fill("rgb(0, 0, 0, 0.1)").concat(Array(3).fill("#FFFFFF"))
 				}
             }, {
 				type: 'linear',
@@ -328,7 +295,7 @@ chart = new Chart(ctx, {
                     }
                 },
 				gridLines: {
-					drawOnChartArea: false, // only want the grid lines for one axis to show up
+					drawOnChartArea: false // only want the grid lines for one axis to show up
 				}
 			}],
             xAxes: [{
@@ -345,7 +312,7 @@ chart = new Chart(ctx, {
 					}
                 }
             }]
-        }, 
+        },
 		tooltips: {
 			enabled: false,
 			mode: 'nearest',
@@ -366,7 +333,7 @@ chart = new Chart(ctx, {
 				  position: "left",
 				  content: "ED attendances",
 				  enabled: true
-				},
+				}
 			}, {
 				type: "line",
 				mode: "horizontal",
@@ -379,7 +346,7 @@ chart = new Chart(ctx, {
 				  position: "left",
 				  content: "Ward admissions",
 				  enabled: true
-				},
+				}
 			}, {
 				type: "line",
 				mode: "horizontal",
@@ -392,7 +359,7 @@ chart = new Chart(ctx, {
 				  position: "left",
 				  content: "Outpatient visits",
 				  enabled: true
-				},
+				}
 			}, {
 				type: "line",
 				mode: "horizontal",
@@ -405,12 +372,11 @@ chart = new Chart(ctx, {
 				  position: "left",
 				  content: "Community services",
 				  enabled: true
-				},
+				}
 			}]
 		}
 	}
 });
-
 for (var enc in patient.encounters) {
 	if ("Calculated LOS" in patient.encounters[enc].attrib) {
 		var boxLOS = {
@@ -422,17 +388,15 @@ for (var enc in patient.encounters) {
 			yMax: typeKey[patient.encounters[enc].cat] + 2,
 			yMin: typeKey[patient.encounters[enc].cat] - 2,
 			backgroundColor: colKey[patient.encounters[enc].cat].slice(0, -1) + ", 0.4)",
-			borderColor: colKey[patient.encounters[enc].cat].slice(0, -1) + ", 0.4)",
-		}
+			borderColor: colKey[patient.encounters[enc].cat].slice(0, -1) + ", 0.4)"
+		};
 		chart.options.annotation.annotations.push(boxLOS);
 	}
 }
-
 chart.update();
 }
 
 loadPatient();
-
 </script>
 </body>
-<html>
+</html>
