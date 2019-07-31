@@ -31,7 +31,7 @@
 <body style="padding: 20px">
 	<table style="table-layout: fixed;">
 	<tr><td  width="500px">
-	<input id="nCase" value="14"> of <span id="numPatients"></span> patients <button onclick="loadPatient();">Load</button><br>
+	<input id="nCase" value="1"> of <span id="numPatients"></span> patients <button onclick="loadPatient();">Load</button><br>
 
 	<h4 id="demo-title"></h4>
 	<b>Primary Diagnosis: </b><span id="primaryDx"></span><br>
@@ -57,21 +57,29 @@ var AKPS = [];
 var RUGADL = [];
 var Admissions = [];
 var typeKey = {
-	"ED": -6,
-	"WARD": -14,
+	"ED": -10,
+	"WARD": -16,
+	"HITH": -20,
 	"ICU": -20,
 	"OUTPT": -30,
 	"COMM": -50,
-	"OTHER": 0
+	"OTHER": 0,
+	"UNCAT": 10,
+	"PC": 4,
+	"PT": -4,
+	"GC": -4,
 };
 var colKey = { //TODO: finish this
 	"ED": "rgb(17, 152, 169)",
 	"WARD": "rgb(20, 69, 166)",
+	"HITH": "rgb(20, 69, 166)",
 	"ICU": "rgb(242, 188, 27)",
 	"OUTPT": "rgb(223, 107, 108)",
 	"COMM": "rgb(15, 166, 68)",
 	"OTHER": 0
 };
+var hiddenInfo = ["AKPS on admission", "AKPS on discharge", "RUG-ADL on admission", "RUG-ADL on discharge"];
+
 var customTooltips = function(tooltip) {
 // Tooltip Element
 	// tooltip.dataPoints[0] -> datasetIndex, index
@@ -99,7 +107,12 @@ var customTooltips = function(tooltip) {
 	var tableRoot = tooltipEl.querySelector('table');
 	for (let ep of tooltip.dataPoints) {
 		if (ep.datasetIndex > 1) {
-			info = chart.data.datasets[ep.datasetIndex].data[ep.index].attrib;
+			info = Object.assign(chart.data.datasets[ep.datasetIndex].data[ep.index].attrib);
+			for (var hidden in hiddenInfo) {
+				if (info.hasOwnProperty(hiddenInfo[hidden])) {
+					delete info[hiddenInfo[hidden]];
+				}
+			}
 			if (tooltip.body) {
 				innerHtml += "<b>Day " + (365 - parseInt(ep.label)).toString() + "</b>&nbsp;";
 				// need to add if here to stop TypeError
@@ -108,10 +121,18 @@ var customTooltips = function(tooltip) {
 				});
 			}
 		} else {
-			innerHtml += "<b>Day " + tooltip.dataPoints[0].label + "</b><br>";
-			innerHtml += tooltip.body[0].lines[0];
+			if (ep.datasetIndex === 1) {
+				ep.value = (18 - parseInt(ep.value)).toString();
+			}
+			lineKeys = ["AKPS", "RUG-ADL"];	
+			innerHtml += "<b>Day " + ep.label + "</b><br>";
+			innerHtml += lineKeys[ep.datasetIndex] + ": " + ep.value;
+			// Note to Kevin: TODO duplicate handling
 		}
-		innerHtml += "<br>";
+	}
+	// remove trailing space
+	while (innerHtml.substring(innerHtml.length-4) === "<br>") {
+		innerHtml = innerHtml.substring(0, innerHtml.length-4);
 	}
 	// Set Text
 	tableRoot.innerHTML = innerHtml;
@@ -157,35 +178,67 @@ ctx = document.getElementById('chartarea').getContext('2d');
 AKPS = [];
 RUGADL = [];
 Admissions = [];
+AH_cols = ["Allied health assisant", "Social worker", "Psychology", "Dietician", "OT", "Speech Pathology", "Physiotherapy", "Diabetes Educator", "Other", "Music Therapy", "Pastoral care"];
 
 for (var i in Object.keys(typeKey)) {
 	Admissions[Object.keys(typeKey)[i]] = [];
 }
 for (var enc in patient.encounters) {
 	if (patient.encounters[enc].cat === "WARD") {
-    var x, y;
-    if ("AKPS on admission" in patient.encounters[enc].attrib) {
+		var x, y;
+		if ("AKPS on admission" in patient.encounters[enc].attrib) {
 			x = patient.encounters[enc].d;
 			y = parseInt(patient.encounters[enc].attrib["AKPS on admission"]);
 			AKPS.push({'x':x, 'y':y});
+			//delete patient.encounters[enc].attrib["AKPS on admission"];
 		}
 		if ("AKPS on discharge" in patient.encounters[enc].attrib && "Calculated LOS" in patient.encounters[enc].attrib) {
 			x = patient.encounters[enc].d + parseInt(patient.encounters[enc].attrib["Calculated LOS"]);
 			y = parseInt(patient.encounters[enc].attrib["AKPS on discharge"]);
 			AKPS.push({'x':x, 'y':y});
+			//delete patient.encounters[enc].attrib["AKPS on discharge"];
 		}
 		if ("RUG-ADL on admission" in patient.encounters[enc].attrib) {
 			x = patient.encounters[enc].d;
 			y = parseInt(patient.encounters[enc].attrib["RUG-ADL on admission"]);
 			RUGADL.push({'x':x, 'y':18-y});
+			//delete patient.encounters[enc].attrib["RUG-ADL on admission"];
 		}
 		if ("RUG-ADL on discharge" in patient.encounters[enc].attrib && "Calculated LOS" in patient.encounters[enc].attrib) {
 			x = patient.encounters[enc].d + parseInt(patient.encounters[enc].attrib["Calculated LOS"]);
 			y = parseInt(patient.encounters[enc].attrib["RUG-ADL on discharge"]);
 			RUGADL.push({'x':x, 'y':18-y});
+			//delete patient.encounters[enc].attrib["RUG-ADL on discharge"];
+		}
+		// Allied health manip here
+		patient.encounters[enc].attrib["Allied health contact"] = "";
+		for (var i in AH_cols) {
+			var AH = AH_cols[i];
+			if (patient.encounters[enc].attrib.hasOwnProperty(AH)) {
+				patient.encounters[enc].attrib["Allied health contact"] += AH + ", ";
+			}
+			delete patient.encounters[enc].attrib[AH];
+		}
+		if (patient.encounters[enc].attrib.hasOwnProperty("Other")) {
+			patient.encounters[enc].attrib["Allied health contact"] += patient.encounters[enc].attrib["Other"];
+		}
+		if (patient.encounters[enc].attrib["Allied health contact"] === "") {
+			delete patient.encounters[enc].attrib["Allied health contact"];
+		} else {
+			patient.encounters[enc].attrib["Allied health contact"] = patient.encounters[enc].attrib["Allied health contact"].slice(0, patient.encounters[enc].attrib["Allied health contact"].length-2);
 		}
 	}
 	var ex = patient.encounters[enc].d;
+	
+	// if category needs to be changed - do it here (eg day admit)
+	if (patient.encounters[enc].cat === "WARD") {
+		if (patient.encounters[enc].attrib["Ward"] === "HITH") {
+			patient.encounters[enc].cat = "HITH";
+		}
+	}
+	else if (patient.encounters[enc].cat === "OTHER") {
+		patient.encounters[enc].cat = patient.encounters[enc].attrib["Category"];
+	}
 	var ey = typeKey[patient.encounters[enc].cat];
 	Admissions[patient.encounters[enc].cat].push({'x':ex, 'y':ey, attrib:patient.encounters[enc].attrib});
 }
@@ -223,7 +276,7 @@ chart = new Chart(ctx, {
 			fill: false,
 			showLine: false,
 			pointRadius: 6,
-			pointHoverRadius: 10,
+			pointHoverRadius: 6,
 			backgroundColor: colKey["ED"]
 		}, {
 			data: Admissions["WARD"], // TODO autogenerate this
@@ -231,15 +284,24 @@ chart = new Chart(ctx, {
 			fill: false,
 			showLine: false,
 			pointRadius: 6,
-			pointHoverRadius: 10,
+			pointHoverRadius: 6,
 			backgroundColor: colKey["WARD"]
+		}, {
+			data: Admissions["HITH"], // TODO autogenerate this
+			yAxisID: 'AKPS',
+			fill: false,
+			showLine: false,
+			pointRadius: 6,
+			pointHoverRadius: 6,
+			backgroundColor: colKey["HITH"],
+			pointStyle: 'rectRot',
 		}, {
 			data: Admissions["ICU"],
 			yAxisID: 'AKPS',
 			fill: false,
 			showLine: false,
-			pointRadius: 12,
-			pointHoverRadius: 12,
+			pointRadius: 10,
+			pointHoverRadius: 10,
 			backgroundColor: colKey["ICU"]
 		}, {
 			data: Admissions["OUTPT"],
@@ -247,7 +309,7 @@ chart = new Chart(ctx, {
 			fill: false,
 			showLine: false,
 			pointRadius: 6,
-			pointHoverRadius: 10,
+			pointHoverRadius: 6,
 			backgroundColor: 'rgb(223, 107, 108)'
 		}, {
 			data: Admissions["COMM"],
@@ -255,8 +317,35 @@ chart = new Chart(ctx, {
 			fill: false,
 			showLine: false,
 			pointRadius: 6,
-			pointHoverRadius: 10,
+			pointHoverRadius: 6,
 			backgroundColor: 'rgb(15, 166, 68)'
+		}, {
+			data: Admissions["UNCAT"],
+			yAxisID: 'AKPS',
+			fill: false,
+			showLine: false,
+			pointRadius: 6,
+			pointHoverRadius: 6,
+			backgroundColor: 'rgb(232, 23, 56)',
+			pointStyle: 'triangle'
+		}, {
+			data: Admissions["PC"],
+			yAxisID: 'AKPS',
+			fill: false,
+			showLine: false,
+			pointRadius: 6,
+			pointHoverRadius: 6,
+			backgroundColor: 'rgb(49, 204, 10)',
+			pointStyle: 'rectRounded'
+		}, {
+			data: Admissions["PT"],
+			yAxisID: 'AKPS',
+			fill: false,
+			showLine: false,
+			pointRadius: 6,
+			pointHoverRadius: 6,
+			backgroundColor: 'rgb(148, 102, 255)',
+			pointStyle: 'rectRounded'
 		}]
     },
     options: {
@@ -378,7 +467,7 @@ chart = new Chart(ctx, {
 	}
 });
 for (var enc in patient.encounters) {
-	if ("Calculated LOS" in patient.encounters[enc].attrib) {
+	if ("LOS" in patient.encounters[enc].attrib && parseInt(patient.encounters[enc].attrib["LOS"]) > 1) {
 		var boxLOS = {
 			type: 'box',
 			xScaleID: 'time',
@@ -391,6 +480,8 @@ for (var enc in patient.encounters) {
 			borderColor: colKey[patient.encounters[enc].cat].slice(0, -1) + ", 0.4)"
 		};
 		chart.options.annotation.annotations.push(boxLOS);
+		patient.encounters[enc].attrib["LOS"] = patient.encounters[enc].attrib["Calculated LOS"];
+		delete patient.encounters[enc].attrib["Calculated LOS"];
 	}
 }
 chart.update();

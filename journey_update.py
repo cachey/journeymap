@@ -19,16 +19,17 @@ Each list item - tuple containing field, start col, end col.
 LY_HEAD = [] # headings for spreadsheet
 ID_COL = 4 # column to determine whether a new patient has started
 DET_START = 7 # first demographic info column
-DET_STOP = 20 # last demographic info column
+DET_STOP = 22 # last demographic info column
 
 ''' At one point, we should relabel these with the journey map series - 0/1/2/3/4 - will need hardcoding.
 Update: do this on the frontend'''
-CAT_COL = [("ED", 23, 37),
-    ("WARD", 38, 78),
-    ("ICU", 79, 93),
-    ("OUTPT", 94, 100),
-    ("COMM", 101, 104),
-    ("OTHER", 104, 105)]
+CAT_COL = [("ED", 24, 33),
+    ("WARD", 35, 71),
+    ("ICU", 73, 86),
+    ("OUTPT", 88, 93),
+    ("COMM", 95, 97),
+    ("OTHER", 99, 101),
+    ("UNCAT", 103, 104)]
 
 def dateConv(s):
     # Convert a dd/mm/yyyy Steph date into a Date object.
@@ -95,45 +96,48 @@ class Patient:
 patients = []
 admCount = 0
 
-with open("data.csv", "r") as data:
-    r = csv.reader(data, dialect=csv.excel)
-    LY_HEAD = next(r) #row of headings
-    row = next(r)
-    print(len(row))
+for datasource in ["data-c.csv", "data-nc.csv"]:
+    with open(datasource, "r") as data:
+        r = csv.reader(data, dialect=csv.excel)
+        LY_HEAD = next(r) #row of headings
+        row = next(r)
+        print(len(row))
 
-    while True:
-        # row is empty -> dispose of patient
-        if len(''.join(row)) == 0:
-            patients.append(currPat)
-        # has pt details -> start a new patient
-        elif row[ID_COL] != "":
-            dem = {}
-            for i in range(DET_START, DET_STOP+1):
-                dem[LY_HEAD[i]] = row[i]
-            currPat = Patient(row[3], row[4], row[5], row[6], dem)
-            for etype in CAT_COL:
-                if row[etype[1]] != "":
-                    # something there!
-                    details = {}
-                    for i in range(etype[1]+1, etype[2]+1):
-                        if row[i] != "": details[LY_HEAD[i]] = row[i]
-                    currPat.addEncounter(row[etype[1]], etype[0], details)
-                    admCount += 1
-        # check for encounters.
-        else:
-            for etype in CAT_COL:
-                if row[etype[1]] != "":
-                    # something there!
-                    details = {}
-                    for i in range(etype[1]+1, etype[2]+1):
-                        if row[i] != "": details[LY_HEAD[i]] = row[i]
-                    currPat.addEncounter(row[etype[1]], etype[0], details)
-                    admCount += 1
-        try:
-            row = next(r)
-        except StopIteration:
-            patients.append(currPat)
-            break
+        while True:
+            # has pt details -> start a new patient
+            if ''.join(row) == "":
+                # print("Skipping row in patient", len(patients))
+                ''' '''
+            elif row[ID_COL] != "":
+                try: patients.append(currPat)
+                except: ''' '''
+                dem = {}
+                for i in range(DET_START, DET_STOP+1):
+                    dem[LY_HEAD[i]] = row[i]
+                currPat = Patient(row[3], row[4], row[5], row[6], dem)
+                for etype in CAT_COL:
+                    if row[etype[1]] != "":
+                        # something there!
+                        details = {}
+                        for i in range(etype[1]+1, etype[2]+1):
+                            if row[i] != "": details[LY_HEAD[i]] = row[i]
+                        currPat.addEncounter(row[etype[1]], etype[0], details)
+                        admCount += 1
+            # check for encounters.
+            else:
+                for etype in CAT_COL:
+                    if row[etype[1]] != "":
+                        # something there!
+                        details = {}
+                        for i in range(etype[1]+1, etype[2]+1):
+                            if row[i] != "": details[LY_HEAD[i]] = row[i]
+                        currPat.addEncounter(row[etype[1]], etype[0], details)
+                        admCount += 1
+            try:
+                row = next(r)
+            except StopIteration:
+                patients.append(currPat)
+                break
 
 print(len(patients), "patients over", admCount, "admissions.")
 
@@ -142,4 +146,5 @@ with open("data.js", "w") as output:
     output.write(",".join([p.exp() for p in patients]))
     output.write("];")
 
+    
     
