@@ -56,18 +56,23 @@ var chart, ctx;
 var AKPS = [];
 var RUGADL = [];
 var Admissions = [];
+
+// order of display, top to bottom
+// adjustable
 var typeKey = {
-	"ED": -10,
-	"WARD": -16,
-	"HITH": -20,
-	"ICU": -20,
-	"OUTPT": -30,
-	"COMM": -50,
+	"UNCAT": 4,
 	"OTHER": 0,
-	"UNCAT": 10,
-	"PC": 4,
-	"PT": -4,
+	"PC": -4,
+	"PT": -8,
 	"GC": -4,
+	"ED": -15,
+	"ICU": -22,
+	"WARD": -25,
+	"HITH": -28,
+	"OUTPT": -40,
+	"MDM": -44,
+	"TELE": -48,
+	"COMM": -55,
 };
 var colKey = { //TODO: finish this
 	"ED": "rgb(17, 152, 169)",
@@ -78,6 +83,11 @@ var colKey = { //TODO: finish this
 	"COMM": "rgb(15, 166, 68)",
 	"OTHER": 0
 };
+
+var KEYS_IGNORE = ["Category", "Calculated LOS"];
+var SPICT_MARK_COL = "rgb(0, 0, 255, 0.1)";
+var FIRST_PC_MARK_COL = "rgb(255, 0, 0, 0.1)";
+
 var hiddenInfo = ["AKPS on admission", "AKPS on discharge", "RUG-ADL on admission", "RUG-ADL on discharge"];
 
 var customTooltips = function(tooltip) {
@@ -115,9 +125,11 @@ var customTooltips = function(tooltip) {
 			}
 			if (tooltip.body) {
 				innerHtml += "<b>Day " + (365 - parseInt(ep.label)).toString() + "</b>&nbsp;";
-				// need to add if here to stop TypeError
 				Object.keys(info).forEach(function(key) {
-					innerHtml += '<b>' + key + ':</b> ' + info[key] + '<br>';
+					// add things to hide
+					if (!(KEYS_IGNORE.includes(key))) {
+						innerHtml += '<b>' + key + ':</b> ' + info[key] + '<br>';
+					}
 				});
 			}
 		} else {
@@ -125,9 +137,9 @@ var customTooltips = function(tooltip) {
 				ep.value = (18 - parseInt(ep.value)).toString();
 			}
 			lineKeys = ["AKPS", "RUG-ADL"];	
-			innerHtml += "<b>Day " + ep.label + "</b><br>";
+			innerHtml += "<b>Day " + (365 - parseInt(ep.label)).toString() + "</b><br>";
 			innerHtml += lineKeys[ep.datasetIndex] + ": " + ep.value;
-			// Note to Kevin: TODO duplicate handling
+			break;
 		}
 	}
 	// remove trailing space
@@ -151,7 +163,7 @@ var loadPatient = function() {
 try {
     chart.destroy();
 } catch {
-	console.log("First patient");
+	// first patient map
 }
 
 if (document.getElementById('chartjs-tooltip')) {
@@ -178,7 +190,7 @@ ctx = document.getElementById('chartarea').getContext('2d');
 AKPS = [];
 RUGADL = [];
 Admissions = [];
-AH_cols = ["Allied health assisant", "Social worker", "Psychology", "Dietician", "OT", "Speech Pathology", "Physiotherapy", "Diabetes Educator", "Other", "Music Therapy", "Pastoral care"];
+AH_cols = ["Allied health assisant", "Social worker", "Psychology", "Dietician", "OT", "Occupational therapy", "Speech Pathology", "Physiotherapy", "Diabetes Educator", "Music Therapy", "Pastoral care"];
 
 for (var i in Object.keys(typeKey)) {
 	Admissions[Object.keys(typeKey)[i]] = [];
@@ -236,6 +248,17 @@ for (var enc in patient.encounters) {
 			patient.encounters[enc].cat = "HITH";
 		}
 	}
+	else if (patient.encounters[enc].cat === "OUTPT") {
+		if (patient.encounters[enc].attrib["Clinic"].substring(0, 4).toLowerCase() === "tele") {
+			patient.encounters[enc].cat = "TELE";
+		}
+		else if (patient.encounters[enc].attrib.hasOwnProperty("Clinic")) {
+			if (patient.encounters[enc].attrib["Clinic"].toLowerCase().split(" ").includes("mdm") ||
+			patient.encounters[enc].attrib["Clinic"].toLowerCase().split(" ").includes("mdt")) {
+				patient.encounters[enc].cat = "MDM";
+			}
+		}
+	}
 	else if (patient.encounters[enc].cat === "OTHER") {
 		patient.encounters[enc].cat = patient.encounters[enc].attrib["Category"];
 	}
@@ -261,7 +284,7 @@ chart = new Chart(ctx, {
 			yAxisID: 'AKPS',
 			backgroundColor: 'rgb(242, 143, 56)',
 			borderColor: 'rgb(242, 143, 56, 0.4)',
-			lineTension: 0.25
+			lineTension: 0.45
         }, {
 			label: "RUG-ADL",
 			fill: false,
@@ -269,7 +292,7 @@ chart = new Chart(ctx, {
 			yAxisID: 'RUGADL',
 			backgroundColor: 'rgb(89, 181, 217)',
 			borderColor: 'rgb(89, 181, 217, 0.4)',
-			lineTension: 0.15
+			lineTension: 0.45
 		}, {
 			data: Admissions["ED"],
 			yAxisID: 'AKPS',
@@ -287,7 +310,7 @@ chart = new Chart(ctx, {
 			pointHoverRadius: 6,
 			backgroundColor: colKey["WARD"]
 		}, {
-			data: Admissions["HITH"], // TODO autogenerate this
+			data: Admissions["HITH"],
 			yAxisID: 'AKPS',
 			fill: false,
 			showLine: false,
@@ -311,6 +334,24 @@ chart = new Chart(ctx, {
 			pointRadius: 6,
 			pointHoverRadius: 6,
 			backgroundColor: 'rgb(223, 107, 108)'
+		}, {
+			data: Admissions["TELE"],
+			yAxisID: 'AKPS',
+			fill: false,
+			showLine: false,
+			pointRadius: 6,
+			pointHoverRadius: 6,
+			backgroundColor: 'rgb(223, 107, 108)',
+			pointStyle: 'triangle',
+		}, {
+			data: Admissions["MDM"],
+			yAxisID: 'AKPS',
+			fill: false,
+			showLine: false,
+			pointRadius: 6,
+			pointHoverRadius: 6,
+			backgroundColor: 'rgb(223, 107, 108)',
+			pointStyle: 'triangle',
 		}, {
 			data: Admissions["COMM"],
 			yAxisID: 'AKPS',
@@ -349,6 +390,10 @@ chart = new Chart(ctx, {
 		}]
     },
     options: {
+		animation: {
+			duration: 1,
+			easing: 'linear',
+		},
 		legend: {
 			display: false
 		},
@@ -464,7 +509,7 @@ chart = new Chart(ctx, {
 				}
 			}]
 		}
-	}
+	},
 });
 for (var enc in patient.encounters) {
 	if ("LOS" in patient.encounters[enc].attrib && parseInt(patient.encounters[enc].attrib["LOS"]) > 1) {
@@ -481,7 +526,39 @@ for (var enc in patient.encounters) {
 		};
 		chart.options.annotation.annotations.push(boxLOS);
 		patient.encounters[enc].attrib["LOS"] = patient.encounters[enc].attrib["Calculated LOS"];
-		delete patient.encounters[enc].attrib["Calculated LOS"];
+	}
+	if (patient.encounters[enc].cat === "PC") {
+		var commentHead = patient.encounters[enc].attrib["Comment"].substring(0, 15).toLowerCase(); 
+		if (commentHead === "pt became spict") {
+			var markSPICT = {
+				type: 'box',
+				xScaleID: 'time',
+				yScaleID: 'AKPS',
+				xMin: patient.encounters[enc].d - 1,
+				xMax: patient.encounters[enc].d + 1,
+				yMax: 100,
+				yMin: -60,
+				backgroundColor: SPICT_MARK_COL,
+				borderColor: SPICT_MARK_COL,
+			};
+			chart.options.annotation.annotations.push(markSPICT);
+		}
+		if (commentHead === "first pc intera") {
+			var markPC = {
+				type: 'box',
+				xScaleID: 'time',
+				yScaleID: 'AKPS',
+				xMin: patient.encounters[enc].d - 1,
+				xMax: patient.encounters[enc].d + 1,
+				yMax: 100,
+				yMin: -60,
+				backgroundColor: FIRST_PC_MARK_COL,
+				borderColor: FIRST_PC_MARK_COL,
+			};
+			// add to header
+			document.getElementById("ptInfo2").innerHTML += "<b>First palliative care contact at:</b> " + (365 - patient.encounters[enc].d).toString() + " days";
+			chart.options.annotation.annotations.push(markPC);
+		}
 	}
 }
 chart.update();
@@ -489,5 +566,7 @@ chart.update();
 
 loadPatient();
 </script>
+
+
 </body>
 </html>
