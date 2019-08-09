@@ -60,26 +60,35 @@ var Admissions = [];
 // order of display, top to bottom
 // adjustable
 var typeKey = {
-	"UNCAT": 4,
+	"UNCAT": 10,
 	"OTHER": 0,
-	"PC": -4,
-	"PT": -8,
-	"GC": -4,
+	"PC": 5,
+	"PT": -5,
+	"GC": 0,
 	"ED": -15,
 	"ICU": -22,
 	"WARD": -25,
-	"HITH": -28,
+	"DAYADMIT": -27,
+	"HITH": -29,
 	"OUTPT": -40,
 	"MDM": -44,
 	"TELE": -48,
 	"COMM": -55,
 };
-var colKey = { //TODO: finish this
-	"ED": "rgb(17, 152, 169)",
-	"WARD": "rgb(20, 69, 166)",
-	"HITH": "rgb(20, 69, 166)",
-	"ICU": "rgb(242, 188, 27)",
+var colKey = {
+	"UNCAT": "rgb(255, 23, 31)", 
 	"OUTPT": "rgb(223, 107, 108)",
+	"PC": "rgb(81, 191, 61)", 
+	"PT": "rgb(169, 70, 227)",
+	"GC": "rgb(0, 0, 0, 0.2)",
+	"ED": "rgb(17, 152, 169)",
+	"ICU": "rgb(242, 188, 27)",
+	"WARD": "rgb(20, 69, 166)",
+	"DAYADMIT": "rgb(40, 89, 186)",
+	"HITH": "rgb(20, 69, 166)",
+	"OUTPT": "rgb(255, 133, 56)",
+	"MDM": "rgb(255, 183, 56)",
+	"TELE": "rgb(255, 133, 106)",
 	"COMM": "rgb(15, 166, 68)",
 	"OTHER": 0
 };
@@ -102,7 +111,7 @@ var customTooltips = function(tooltip) {
 	}
 	// Hide if no tooltip
 	if (tooltip.opacity === 0) {
-		tooltipEl.style.opacity = 0.7;
+		tooltipEl.style.opacity = 0;
 		return;
 	}
 	// Set caret Position
@@ -247,9 +256,12 @@ for (var enc in patient.encounters) {
 		if (patient.encounters[enc].attrib["Ward"] === "HITH") {
 			patient.encounters[enc].cat = "HITH";
 		}
+		else if (patient.encounters[enc].attrib["Ward"].substring(0, 5) === "Clini" || patient.encounters[enc].attrib["Ward"].toLowerCase().split(" ").includes("day")) {
+			patient.encounters[enc].cat = "DAYADMIT";
+		}
 	}
 	else if (patient.encounters[enc].cat === "OUTPT") {
-		if (patient.encounters[enc].attrib["Clinic"].substring(0, 4).toLowerCase() === "tele") {
+		if (patient.encounters[enc].attrib["Clinic"].substring(0, 4).toLowerCase() === "tele" || patient.encounters[enc].attrib["Clinic"].substring(0, 6).toLowerCase() === "e-cont") {
 			patient.encounters[enc].cat = "TELE";
 		}
 		else if (patient.encounters[enc].attrib.hasOwnProperty("Clinic")) {
@@ -273,120 +285,98 @@ RUGADL.sort(function(a, b) {
 	return a.x - b.x;
 });
 
+Chart.defaults.global.elements.line.fill = false;
+Chart.defaults.global.elements.line.borderWidth = 0;
+Chart.defaults.global.elements.line.borderColor = 'rgba(0, 0, 0, 0)';
+Chart.defaults.global.elements.point.radius = 6;
+Chart.defaults.global.elements.point.hoverRadius = 6;
+
 chart = new Chart(ctx, {
     type: 'line',
     data: {
         labels: [],
         datasets: [{
             label: "AKPS",
-			fill: false,
 			data: AKPS,
 			yAxisID: 'AKPS',
+			showLine: true,
 			backgroundColor: 'rgb(242, 143, 56)',
 			borderColor: 'rgb(242, 143, 56, 0.4)',
-			lineTension: 0.45
+			borderWidth: 4,
+			lineTension: 0.15,
+			pointRadius: 4,
         }, {
 			label: "RUG-ADL",
-			fill: false,
 			data: RUGADL,
 			yAxisID: 'RUGADL',
+			showLine: true,
 			backgroundColor: 'rgb(89, 181, 217)',
 			borderColor: 'rgb(89, 181, 217, 0.4)',
-			lineTension: 0.45
+			borderWidth: 4,
+			lineTension: 0.2,
+			pointRadius: 4,
 		}, {
 			data: Admissions["ED"],
 			yAxisID: 'AKPS',
-			fill: false,
-			showLine: false,
-			pointRadius: 6,
-			pointHoverRadius: 6,
 			backgroundColor: colKey["ED"]
 		}, {
 			data: Admissions["WARD"], // TODO autogenerate this
 			yAxisID: 'AKPS',
-			fill: false,
-			showLine: false,
-			pointRadius: 6,
-			pointHoverRadius: 6,
 			backgroundColor: colKey["WARD"]
+		}, {
+			data: Admissions["DAYADMIT"], // TODO autogenerate this
+			yAxisID: 'AKPS',
+			backgroundColor: colKey["WARD"],
+			pointStyle: 'triangle'
 		}, {
 			data: Admissions["HITH"],
 			yAxisID: 'AKPS',
-			fill: false,
-			showLine: false,
-			pointRadius: 6,
-			pointHoverRadius: 6,
 			backgroundColor: colKey["HITH"],
 			pointStyle: 'rectRot',
 		}, {
 			data: Admissions["ICU"],
 			yAxisID: 'AKPS',
-			fill: false,
-			showLine: false,
-			pointRadius: 10,
-			pointHoverRadius: 10,
 			backgroundColor: colKey["ICU"]
 		}, {
 			data: Admissions["OUTPT"],
 			yAxisID: 'AKPS',
-			fill: false,
-			showLine: false,
-			pointRadius: 6,
-			pointHoverRadius: 6,
-			backgroundColor: 'rgb(223, 107, 108)'
+			backgroundColor: colKey["OUTPT"]
 		}, {
 			data: Admissions["TELE"],
 			yAxisID: 'AKPS',
-			fill: false,
-			showLine: false,
-			pointRadius: 6,
-			pointHoverRadius: 6,
-			backgroundColor: 'rgb(223, 107, 108)',
+			backgroundColor: colKey["TELE"],
 			pointStyle: 'triangle',
 		}, {
 			data: Admissions["MDM"],
 			yAxisID: 'AKPS',
-			fill: false,
-			showLine: false,
-			pointRadius: 6,
-			pointHoverRadius: 6,
-			backgroundColor: 'rgb(223, 107, 108)',
+			backgroundColor: colKey["MDM"],
 			pointStyle: 'triangle',
 		}, {
 			data: Admissions["COMM"],
 			yAxisID: 'AKPS',
-			fill: false,
-			showLine: false,
-			pointRadius: 6,
-			pointHoverRadius: 6,
-			backgroundColor: 'rgb(15, 166, 68)'
+			backgroundColor: colKey["COMM"],
 		}, {
 			data: Admissions["UNCAT"],
 			yAxisID: 'AKPS',
-			fill: false,
-			showLine: false,
-			pointRadius: 6,
-			pointHoverRadius: 6,
-			backgroundColor: 'rgb(232, 23, 56)',
+			backgroundColor: colKey["UNCAT"],
 			pointStyle: 'triangle'
 		}, {
 			data: Admissions["PC"],
 			yAxisID: 'AKPS',
-			fill: false,
-			showLine: false,
-			pointRadius: 6,
-			pointHoverRadius: 6,
-			backgroundColor: 'rgb(49, 204, 10)',
+			backgroundColor: colKey["PC"],
 			pointStyle: 'rectRounded'
 		}, {
 			data: Admissions["PT"],
 			yAxisID: 'AKPS',
-			fill: false,
-			showLine: false,
-			pointRadius: 6,
-			pointHoverRadius: 6,
-			backgroundColor: 'rgb(148, 102, 255)',
+			backgroundColor: colKey["PT"],
 			pointStyle: 'rectRounded'
+		}, {
+			data: Admissions["GC"],
+			yAxisID: 'AKPS',
+			showLine: false,
+			pointRadius: 10,
+			pointHoverRadius: 10,
+			backgroundColor: colKey["GC"]
 		}]
     },
     options: {
@@ -394,8 +384,9 @@ chart = new Chart(ctx, {
 			duration: 1,
 			easing: 'linear',
 		},
+		events: ['mousemove', 'click'],
 		legend: {
-			display: false
+			display: false,
 		},
 		scales: {
             yAxes: [{
@@ -455,12 +446,12 @@ chart = new Chart(ctx, {
 			custom: customTooltips
 		},
 		annotation: {
-			annotations: [{ // can be automated - labels only for series that exist
+			annotations: [{
 				type: "line",
 				mode: "horizontal",
 				scaleID: "AKPS",
 				value: typeKey["ED"],
-				borderColor: colKey["ED"].slice(0, -1) + ", 0.4)",
+				borderColor: colKey["ED"].slice(0, -1) + ", 0.2)",
 				borderWidth: 0,
 				label: {
 				  backgroundColor: colKey["ED"],
@@ -473,7 +464,7 @@ chart = new Chart(ctx, {
 				mode: "horizontal",
 				scaleID: "AKPS",
 				value: typeKey["WARD"],
-				borderColor: colKey["WARD"].slice(0, -1) + ", 0.4)",
+				borderColor: colKey["WARD"].slice(0, -1) + ", 0.2)",
 				borderWidth: 0,
 				label: {
 				  backgroundColor: colKey["WARD"],
@@ -486,7 +477,7 @@ chart = new Chart(ctx, {
 				mode: "horizontal",
 				scaleID: "AKPS",
 				value: typeKey["OUTPT"],
-				borderColor: colKey["OUTPT"].slice(0, -1) + ", 0.4)",
+				borderColor: colKey["OUTPT"].slice(0, -1) + ", 0.2)",
 				borderWidth: 0,
 				label: {
 				  backgroundColor: colKey["OUTPT"],
@@ -499,7 +490,7 @@ chart = new Chart(ctx, {
 				mode: "horizontal",
 				scaleID: "AKPS",
 				value: typeKey["COMM"],
-				borderColor: colKey["COMM"].slice(0, -1) + ", 0.4)",
+				borderColor: colKey["COMM"].slice(0, -1) + ", 0.2)",
 				borderWidth: 0,
 				label: {
 				  backgroundColor: colKey["COMM"],
@@ -522,7 +513,8 @@ for (var enc in patient.encounters) {
 			yMax: typeKey[patient.encounters[enc].cat] + 2,
 			yMin: typeKey[patient.encounters[enc].cat] - 2,
 			backgroundColor: colKey[patient.encounters[enc].cat].slice(0, -1) + ", 0.4)",
-			borderColor: colKey[patient.encounters[enc].cat].slice(0, -1) + ", 0.4)"
+			borderColor: colKey[patient.encounters[enc].cat].slice(0, -1) + ", 0.4)",
+			borderWidth: 1,
 		};
 		chart.options.annotation.annotations.push(boxLOS);
 		patient.encounters[enc].attrib["LOS"] = patient.encounters[enc].attrib["Calculated LOS"];
@@ -534,12 +526,13 @@ for (var enc in patient.encounters) {
 				type: 'box',
 				xScaleID: 'time',
 				yScaleID: 'AKPS',
-				xMin: patient.encounters[enc].d - 1,
-				xMax: patient.encounters[enc].d + 1,
+				xMin: patient.encounters[enc].d - 0.5,
+				xMax: patient.encounters[enc].d + 1.5,
 				yMax: 100,
 				yMin: -60,
 				backgroundColor: SPICT_MARK_COL,
 				borderColor: SPICT_MARK_COL,
+				borderWidth: 1,
 			};
 			chart.options.annotation.annotations.push(markSPICT);
 		}
@@ -548,15 +541,16 @@ for (var enc in patient.encounters) {
 				type: 'box',
 				xScaleID: 'time',
 				yScaleID: 'AKPS',
-				xMin: patient.encounters[enc].d - 1,
-				xMax: patient.encounters[enc].d + 1,
+				xMin: patient.encounters[enc].d - 1.5,
+				xMax: patient.encounters[enc].d + 0.5,
 				yMax: 100,
 				yMin: -60,
 				backgroundColor: FIRST_PC_MARK_COL,
 				borderColor: FIRST_PC_MARK_COL,
+				borderWidth: 1,
 			};
 			// add to header
-			document.getElementById("ptInfo2").innerHTML += "<b>First palliative care contact at:</b> " + (365 - patient.encounters[enc].d).toString() + " days";
+			document.getElementById("ptInfo2").innerHTML += "<b>First palliative care contact at:</b> " + (366 - patient.encounters[enc].d).toString() + " days";
 			chart.options.annotation.annotations.push(markPC);
 		}
 	}
