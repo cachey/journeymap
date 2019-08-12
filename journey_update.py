@@ -136,7 +136,7 @@ for datasource in ["data-c.csv", "data-nc.csv"]:
             try:
                 row = next(r)
             except StopIteration:
-                patients.append(currPat)
+                # patients.append(currPat) # no longer necessary - empty row follows last patient
                 break
 
 print(len(patients), "patients over", admCount, "admissions.")

@@ -507,7 +507,7 @@ chart = new Chart(ctx, {
 	},
 });
 for (var enc in patient.encounters) {
-	if ("LOS" in patient.encounters[enc].attrib && parseInt(patient.encounters[enc].attrib["LOS"]) > 1) {
+	if ("Calculated LOS" in patient.encounters[enc].attrib && parseInt(patient.encounters[enc].attrib["Calculate LOS"]) > 1) {
 		var boxLOS = {
 			type: 'box',
 			xScaleID: 'time',
