@@ -38,19 +38,19 @@ One-use utility for the dataset defined by Poon/Ly et al (BMedSc(Hons) project 2
 	<table style="table-layout: fixed;">
 	<tr><td  width="500px">
 	<input id="nCase" value="1"> of <span id="numPatients"></span> patients <button onclick="loadPatient();">Load</button><br>
-
+	<button onclick="document.getElementById('nCase').value = parseInt(document.getElementById('nCase').value)-1; loadPatient();">Previous</button>
+	<button onclick="document.getElementById('nCase').value = parseInt(document.getElementById('nCase').value)+1; loadPatient();">Next</button>
 	<h4 id="demo-title"></h4>
 	<b>Primary Diagnosis: </b><span id="primaryDx"></span><br>
 	<b>Secondary Diagnosis: </b><span id="secondDx"></span>
 	</td><td width="500px">
-	<button onclick="document.getElementById('nCase').value = parseInt(document.getElementById('nCase').value)-1; loadPatient();">Previous</button>
-	<button onclick="document.getElementById('nCase').value = parseInt(document.getElementById('nCase').value)+1; loadPatient();">Next</button>
+	
 	<div id="ptInfo1" style="font-size: 14px;"></div>
 	</td><td width="500px">
 	<div id="ptInfo2" style="font-size: 14px;"></div>
 	</td><td width="500px">
 	<div id="mapkey">
-		<img src="map_key.png" />
+		<img src="map_key.png" width="600px" />
 	</div>
 	</td></tr></table>
 	<canvas id="chartarea" height="100%"></canvas>
